@@ -86,6 +86,38 @@ C narrows A down: the kill reaches invocations whose `invoked_by_id` is the kill
 through a caller that has already completed. E shows that only a kill through the admin API propagates; the kill that
 ends retry exhaustion does not.
 
+## Why it matters
+
+A common pattern is for a handler to start, by a one-way send, something that must outlive it: a monitor that
+releases a lease when the handler's invocation ends, an expiry, a compensation. The documentation says that is safe
+under a kill. In practice an operator's kill takes the monitor with it, no code runs in either invocation, and what
+the monitor would have released stays held. We found this through reservations that were never released.
+
+## Further observations
+
+Measured on the same versions, outside this repository's five scenarios:
+
+- **The same holds when the parent is paused.** Killing a parent that is paused after exhausting its retries also
+  kills its one-way child.
+- **The child's kind does not matter.** A one-way child that is a virtual object handler or a workflow is killed too.
+- **A completed invocation cannot be killed.** If the parent has already completed, the admin API answers 409 for a
+  kill of it and its children are unaffected.
+- **A workflow started from outside is still killed if the parent later sends the same workflow key,** because a
+  workflow's invocation id is fixed by its key and the parent becomes a sender of it.
+- **Not tested:** a chain in which every intermediate invocation is still running.
+
+## Questions for the Restate team
+
+1. Is this a defect in the server, or is the documentation wrong about kill?
+2. If it is intended, can the admin API offer a kill that does not propagate to one-way and delayed children, and can
+   the documentation state the rule, including the delayed send that is dropped and the workflow-key case?
+3. If it is a defect, which versions are affected, and will a fix change the behaviour for invocations that are
+   already running when the server is upgraded?
+
+The admin OpenAPI of 1.8.0 describes `PATCH /invocations/{invocation_id}/kill` as "Forcefully terminates an
+invocation", with a warning about consistency and no parameter to limit propagation. The 1.8.0 release notes mention
+no change to propagation.
+
 ## How the driver decides each outcome
 
 [`src/repro.ts`](src/repro.ts) serves the services in-process, registers the deployment, and runs the scenarios in
