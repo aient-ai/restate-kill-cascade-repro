@@ -1,0 +1,9 @@
+services:
+  restate:
+    image: docker.io/restatedev/restate:1.8.0
+    ports:
+      - "28080:8080" # ingress
+      - "29070:9070" # admin API
+    extra_hosts:
+      # Lets Restate reach the service endpoint that src/repro.ts serves on the host (needed on Linux).
+      - "host.docker.internal:host-gateway"

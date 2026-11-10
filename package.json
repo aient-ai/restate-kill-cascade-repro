@@ -1,0 +1,20 @@
+{
+  "name": "restate-kill-cascade-repro",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reproduction: an admin kill of a Restate invocation also kills invocations it started with a one-way send",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "repro": "tsx src/repro.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@restatedev/restate-sdk": "1.14.4"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.2",
+    "tsx": "4.23.15",
+    "typescript": "5.7.2"
+  }
+}
